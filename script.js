@@ -8,22 +8,35 @@ function showPage(pageId) {
 }
 
 function parseRawInput(text) {
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+    // Эта магия разделяет текст по словам Question, сохраняя переносы
     const questions = [];
-    let currentQ = null;
+    const rawBlocks = text.split(/Question/i); // Режем текст по слову Question
 
-    lines.forEach(line => {
-        if (line.toLowerCase().startsWith('question')) {
-            if (currentQ) questions.push(currentQ);
-            currentQ = { q: line.replace(/question/i, '').trim(), options: [], correct: null };
-        } else if (line.toLowerCase().startsWith('option')) {
-            const isCorrect = line.toLowerCase().endsWith('true');
-            const text = line.replace(/option\d+/i, '').replace(/true/i, '').trim();
-            currentQ.options.push(text);
-            if (isCorrect) currentQ.correct = currentQ.options.length - 1;
+    rawBlocks.forEach(block => {
+        if (block.trim() === "") return;
+
+        // Разделяем блок на строки или по словам Option
+        const lines = block.split(/Option\d+/i);
+        const questionText = lines[0].trim();
+        const options = [];
+        let correct = null;
+
+        // Ищем варианты ответов внутри блока
+        const optionMatches = [...block.matchAll(/Option\d+\s+(.*?)(?=Option\d+|$)/gis)];
+        
+        optionMatches.forEach((match, index) => {
+            let optText = match[1].trim();
+            if (optText.toLowerCase().includes("true")) {
+                correct = index;
+                optText = optText.replace(/true/i, "").trim();
+            }
+            options.push(optText);
+        });
+
+        if (questionText) {
+            questions.push({ q: questionText, options, correct });
         }
     });
-    if (currentQ) questions.push(currentQ);
     return questions;
 }
 
