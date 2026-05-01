@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>My Quiz Creator</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Поддержка формул (MathJax) -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+    <!-- ГЛАВНАЯ СТРАНИЦА -->
+    <div id="main-page" class="page">
+        <header>
+            <h1>Мои тесты</h1>
+        </header>
+        <div class="container">
+            <section class="editor">
+                <h3>Создать новый тест</h3>
+                <input type="text" id="quiz-title" placeholder="Название теста (например, ООП)">
+                <textarea id="quiz-raw-input" placeholder="Формат:
+Question Какое-то условие
+Option1 Вариант А
+Option2 Вариант Б true
+Option3 Вариант В"></textarea>
+                <button onclick="handleSaveQuiz()">Сохранить в библиотеку</button>
+            </section>
+
+            <section class="library">
+                <h3>Сохраненные тесты</h3>
+                <div id="quiz-list"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- СТРАНИЦА ТЕСТА -->
+    <div id="quiz-page" class="page hidden">
+        <div class="quiz-header">
+            <button onclick="showPage('main-page')">← Назад</button>
+            <h2 id="current-quiz-title">Название теста</h2>
+            <label>
+                <input type="checkbox" id="instant-check"> Показывать ответ сразу
+            </label>
+        </div>
+        <div id="questions-container"></div>
+        <button id="submit-btn" class="main-btn" onclick="checkFullQuiz()">Сдать тест</button>
+    </div>
+
+    <!-- ВАЖНО: Сначала библиотеки Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- ВАЖНО: Твой скрипт в самом конце, только ОДИН раз -->
+    <script src="script.js"></script>
+</body>
+</html>
