@@ -19,13 +19,13 @@
         <div class="container">
             <section class="editor">
                 <h3>Создать новый тест</h3>
-                <input type="text" id="quiz-title" placeholder="Название теста (например, ООП)">
+                <input type="text" id="quiz-title" placeholder="Название теста (например, Математика)">
                 <textarea id="quiz-raw-input" placeholder="Формат:
 Question Какое-то условие
 Option1 Вариант А
 Option2 Вариант Б true
 Option3 Вариант В"></textarea>
-                <button onclick="handleSaveQuiz()">Сохранить в библиотеку</button>
+                <button onclick="handleSaveQuiz()">Сохранить в облако</button>
             </section>
 
             <section class="library">
@@ -38,21 +38,27 @@ Option3 Вариант В"></textarea>
     <!-- СТРАНИЦА ТЕСТА -->
     <div id="quiz-page" class="page hidden">
         <div class="quiz-header">
-            <button onclick="showPage('main-page')">← Назад</button>
+            <button onclick="showPage('main-page')" class="back-btn">← Назад</button>
             <h2 id="current-quiz-title">Название теста</h2>
-            <label>
-                <input type="checkbox" id="instant-check"> Показывать ответ сразу
-            </label>
+            
+            <div class="settings-panel">
+                <label class="switch-label">
+                    <input type="checkbox" id="instant-check"> Показывать ответ сразу
+                </label>
+                <label class="switch-label">
+                    <input type="checkbox" id="lyceum-mode"> Режим «90 лицей» (+4/-1)
+                </label>
+            </div>
         </div>
         <div id="questions-container"></div>
         <button id="submit-btn" class="main-btn" onclick="checkFullQuiz()">Сдать тест</button>
     </div>
 
-    <!-- ВАЖНО: Сначала библиотеки Firebase -->
+    <!-- Библиотеки Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
-    <!-- ВАЖНО: Твой скрипт в самом конце, только ОДИН раз -->
+    <!-- Твой основной скрипт -->
     <script src="script.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// Твоя конфигурация из консоли
+// Конфигурация Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyBmO3_-It7aTdZgFTuNa6fW7as5tATdJRs",
     authDomain: "myquizlab-5c87b.firebaseapp.com",
@@ -10,81 +10,31 @@ const firebaseConfig = {
     measurementId: "G-PSHXJ7NYMV"
 };
 
-// Инициализация (версия Compat)
+// Инициализация
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 let allQuizzes = [];
 let currentQuiz = null;
 
-// 1. Синхронизация с облаком в реальном времени
+// Слушатель базы данных
 database.ref('quizzes').on('value', (snapshot) => {
     const data = snapshot.val();
     allQuizzes = [];
     if (data) {
-        // Превращаем объект Firebase в массив
         Object.keys(data).forEach(key => {
-            allQuizzes.push({ id: data[key].id, title: data[key].title, questions: data[key].questions, dbKey: key });
+            allQuizzes.push({ ...data[key], dbKey: key });
         });
     }
     renderLibrary();
 });
 
-// 2. Навигация
 function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
     document.getElementById(pageId).classList.remove('hidden');
 }
 
-// 3. Сохранение в облако
-function handleSaveQuiz() {
-    const title = document.getElementById('quiz-title').value;
-    const rawData = document.getElementById('quiz-raw-input').value;
-    
-    if(!title || !rawData) return alert("Заполни поля!");
-
-    const newQuiz = {
-        id: Date.now(),
-        title: title,
-        questions: parseRawInput(rawData)
-    };
-
-    // Отправляем в Firebase
-    database.ref('quizzes').push(newQuiz);
-
-    document.getElementById('quiz-title').value = '';
-    document.getElementById('quiz-raw-input').value = '';
-    alert("Тест отправлен в облако!");
-}
-
-// 4. Удаление из облака
-function deleteQuiz(dbKey) {
-    if (confirm("Удалить этот тест из всех устройств?")) {
-        database.ref('quizzes/' + dbKey).remove();
-    }
-}
-
-// 5. Редактирование (Загрузка в форму и удаление старого)
-function editQuiz(dbKey) {
-    const quiz = allQuizzes.find(q => q.dbKey === dbKey);
-    document.getElementById('quiz-title').value = quiz.title;
-    
-    let rawText = "";
-    quiz.questions.forEach((q) => {
-        rawText += `Question ${q.q}\n`;
-        q.options.forEach((opt, oIdx) => {
-            rawText += `Option${oIdx + 1} ${opt}${oIdx === q.correct ? ' true' : ''}\n`;
-        });
-        rawText += "\n";
-    });
-    document.getElementById('quiz-raw-input').value = rawText;
-    
-    // Удаляем из базы, чтобы при сохранении создалась обновленная версия
-    database.ref('quizzes/' + dbKey).remove();
-    window.scrollTo(0,0);
-}
-
-// 6. Парсер
+// ПАРСЕР
 function parseRawInput(text) {
     const questions = [];
     const rawBlocks = text.split(/Question/i);
@@ -108,75 +58,151 @@ function parseRawInput(text) {
     return questions;
 }
 
-// 7. Отрисовка списка
+function handleSaveQuiz() {
+    const title = document.getElementById('quiz-title').value;
+    const rawData = document.getElementById('quiz-raw-input').value;
+    if(!title || !rawData) return alert("Заполни все поля!");
+
+    const newQuiz = { id: Date.now(), title, questions: parseRawInput(rawData) };
+    database.ref('quizzes').push(newQuiz);
+    
+    document.getElementById('quiz-title').value = '';
+    document.getElementById('quiz-raw-input').value = '';
+    alert("Сохранено в облако!");
+}
+
 function renderLibrary() {
     const list = document.getElementById('quiz-list');
     if(!list) return;
     list.innerHTML = allQuizzes.map(q => `
         <div class="quiz-card">
-            <div><strong>${q.title}</strong> <br> <small>${q.questions.length} вопр.</small></div>
+            <div class="quiz-info">
+                <strong>${q.title}</strong><br>
+                <small>${q.questions ? q.questions.length : 0} вопросов</small>
+            </div>
             <div class="quiz-actions">
-                <button onclick="startQuiz(${q.id})">Открыть</button>
-                <button onclick="editQuiz('${q.dbKey}')" style="background:#FF9800">✎</button>
-                <button onclick="deleteQuiz('${q.dbKey}')" style="background:#f44336">✕</button>
+                <button onclick="startQuiz(${q.id})" style="background:#28a745">Открыть</button>
+                <button onclick="editQuiz('${q.dbKey}')" style="background:#ffc107; color: #333">✎</button>
+                <button onclick="deleteQuiz('${q.dbKey}')" style="background:#dc3545">✕</button>
             </div>
         </div>
     `).join('');
 }
 
-// 8. Логика теста (та же, что была раньше)
+function deleteQuiz(dbKey) {
+    if(confirm("Удалить тест навсегда?")) database.ref('quizzes/' + dbKey).remove();
+}
+
+function editQuiz(dbKey) {
+    const quiz = allQuizzes.find(q => q.dbKey === dbKey);
+    document.getElementById('quiz-title').value = quiz.title;
+    let rawText = "";
+    quiz.questions.forEach(q => {
+        rawText += `Question ${q.q}\n`;
+        q.options.forEach((opt, i) => {
+            rawText += `Option${i+1} ${opt}${i === q.correct ? ' true' : ''}\n`;
+        });
+        rawText += "\n";
+    });
+    document.getElementById('quiz-raw-input').value = rawText;
+    database.ref('quizzes/' + dbKey).remove();
+    window.scrollTo(0,0);
+}
+
 function startQuiz(id) {
     currentQuiz = allQuizzes.find(q => q.id === id);
     document.getElementById('current-quiz-title').innerText = currentQuiz.title;
+    document.getElementById('submit-btn').style.display = 'block';
     const container = document.getElementById('questions-container');
+    
     container.innerHTML = currentQuiz.questions.map((q, qIdx) => `
         <div class="question-block">
             <p><strong>${qIdx + 1}.</strong> ${q.q}</p>
-            ${q.options.map((opt, oIdx) => `
-                <button class="option-btn" onclick="handleOptionClick(${qIdx}, ${oIdx}, this)">${opt}</button>
-            `).join('')}
+            <div class="options-group">
+                ${q.options.map((opt, oIdx) => `
+                    <button class="option-btn" onclick="handleOptionClick(${qIdx}, ${oIdx}, this)">${opt}</button>
+                `).join('')}
+            </div>
         </div>
     `).join('');
+    
     showPage('quiz-page');
-    // В конец функции startQuiz
-if (window.MathJax) {
-    MathJax.typesetPromise();
-}
+    if (window.MathJax) MathJax.typesetPromise();
 }
 
 function handleOptionClick(qIdx, oIdx, btn) {
     const isInstant = document.getElementById('instant-check').checked;
     const correctIdx = currentQuiz.questions[qIdx].correct;
+    const parent = btn.parentElement;
+
     if (isInstant) {
         if (oIdx === correctIdx) btn.classList.add('correct');
         else {
             btn.classList.add('wrong');
-            btn.parentElement.querySelectorAll('.option-btn')[correctIdx].classList.add('correct');
+            parent.querySelectorAll('.option-btn')[correctIdx].classList.add('correct');
         }
-        btn.parentElement.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+        parent.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
     } else {
-        btn.parentElement.querySelectorAll('.option-btn').forEach(b => {
-            b.style.border = '1px solid #ddd';
+        parent.querySelectorAll('.option-btn').forEach(b => {
+            b.style.border = '1px solid #eee';
             delete b.dataset.selected;
         });
-        btn.style.border = '2px solid #2196F3'; 
+        btn.style.border = '2px solid #1a73e8'; 
         btn.dataset.selected = oIdx;
     }
 }
 
 function checkFullQuiz() {
-    let score = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let skippedCount = 0;
+    let lyceumPoints = 0;
+    
+    const isLyceumMode = document.getElementById('lyceum-mode').checked;
+    const questions = currentQuiz.questions;
+
     document.querySelectorAll('.question-block').forEach((block, qIdx) => {
-        const correctIdx = currentQuiz.questions[qIdx].correct;
+        const correctIdx = questions[qIdx].correct;
         const btns = block.querySelectorAll('.option-btn');
         let selected = null;
-        btns.forEach((b, i) => { if(b.dataset.selected !== undefined) selected = i; });
+
+        btns.forEach((b, i) => { 
+            if(b.dataset.selected !== undefined) selected = Number(b.dataset.selected); 
+        });
+
         btns.forEach((b, i) => {
             b.disabled = true;
             if(i === correctIdx) b.classList.add('correct');
             if(selected === i && i !== correctIdx) b.classList.add('wrong');
         });
-        if(selected === correctIdx) score++;
+
+        if (selected === null) {
+            skippedCount++;
+        } else if (selected === correctIdx) {
+            correctCount++;
+            lyceumPoints += 4;
+        } else {
+            wrongCount++;
+            lyceumPoints -= 1;
+        }
     });
-    alert(`Твой результат: ${score} из ${currentQuiz.questions.length}`);
+
+    let resultMsg = `РЕЗУЛЬТАТЫ ТЕСТА:\n`;
+    resultMsg += `--------------------------\n`;
+    resultMsg += `Правильно: ${correctCount}\n`;
+    resultMsg += `Неправильно: ${wrongCount}\n`;
+    resultMsg += `Пропущено: ${skippedCount}\n`;
+    
+    if (isLyceumMode) {
+        resultMsg += `--------------------------\n`;
+        resultMsg += `ИТОГОВЫЙ БАЛЛ (Лицей): ${lyceumPoints}\n`;
+        resultMsg += `(Расчет: ${correctCount}*4 - ${wrongCount}*1)`;
+    } else {
+        const percent = Math.round((correctCount / questions.length) * 100);
+        resultMsg += `--------------------------\n`;
+        resultMsg += `Успешность: ${percent}%`;
+    }
+
+    alert(resultMsg);
+    document.getElementById('submit-btn').style.display = 'none';
 }
