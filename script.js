@@ -126,12 +126,20 @@ database.ref('quizzes').on('value', (snapshot) => {
 function renderLibrary() {
     const list = document.getElementById('quiz-list');
     if (!list || !currentUser) return;
+
     list.innerHTML = allQuizzes.map(q => `
         <div class="quiz-card">
-            <strong>${q.title}</strong>
+            <div class="quiz-info">
+                <strong>${q.title}</strong><br>
+                <small style="color: #666;">Вопросов: ${q.questions ? q.questions.length : 0}</small>
+            </div>
             <div class="quiz-actions">
-                <button onclick="startQuiz(${q.id})" style="background:#28a745; color:white;">Начать</button>
-                ${isAdmin ? `<button onclick="deleteQuiz('${q.dbKey}')" style="background:#dc3545; color:white;">✕</button>` : ''}
+                <button onclick="startQuiz(${q.id})" style="background:#28a745; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; font-weight: bold;">Начать</button>
+                
+                ${isAdmin ? `
+                    <button onclick="editQuiz('${q.dbKey}')" style="background:#ffc107; color:#333; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">✎</button>
+                    <button onclick="deleteQuiz('${q.dbKey}')" style="background:#dc3545; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">✕</button>
+                ` : ''}
             </div>
         </div>
     `).join('');
