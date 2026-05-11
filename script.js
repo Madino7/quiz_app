@@ -265,3 +265,33 @@ function saveResultToCloud(score, total, percent, points) {
         score, total, percent, points
     });
 }
+// ФУНКЦИЯ РЕДАКТИРОВАНИЯ
+function editQuiz(dbKey) {
+    // 1. Находим нужный тест в массиве по его ключу в базе
+    const quiz = allQuizzes.find(q => q.dbKey === dbKey);
+    if (!quiz) return;
+
+    // 2. Заполняем заголовок
+    document.getElementById('quiz-title').value = quiz.title;
+    
+    // 3. Превращаем массив вопросов обратно в текст для textarea
+    let rawText = "";
+    quiz.questions.forEach(q => {
+        rawText += `Question ${q.q}\n`;
+        q.options.forEach((opt, i) => {
+            // Добавляем "true" к правильному варианту
+            rawText += `Option${i+1} ${opt}${i === q.correct ? ' true' : ''}\n`;
+        });
+        rawText += "\n"; // Пробел между вопросами
+    });
+    
+    document.getElementById('quiz-raw-input').value = rawText;
+
+    // 4. Даем знать учителю, что делать дальше
+    if(confirm("Тест загружен в редактор. После внесения правок нажмите 'Сохранить в облако'. Удалить старую версию теста из списка сейчас?")) {
+        database.ref('quizzes/' + dbKey).remove();
+    }
+    
+    // Скроллим вверх к редактору
+    window.scrollTo(0, 0);
+}
